@@ -1,0 +1,31 @@
+exports.getPosts = (req, res, next) => {
+    res.status(200).json({
+        posts: [
+            {
+                _id: '1',
+                title: "Hello this is my first post", 
+                content: "This is my first Post",
+                imageUrl: 'images/comp.jpg',
+                creator: {
+                    name: 'Rafli'
+                },
+                createdAt: new Date()
+            }
+        ]
+    })
+}
+
+exports.createPost = (req, res, next) => {
+    const title = req.body.title
+    const content = req.body.content
+    console.log(`title: ${title}`)
+    console.log(`content: ${content}`)
+    //sending status post
+    res.status(201).json({
+        message: "post created successfully",
+        post: {
+            title: title,
+            content: content
+        }
+    })
+}
