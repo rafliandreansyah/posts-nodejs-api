@@ -1,13 +1,22 @@
+const path = require('path')
+
 const express = require('express')
-const bodyParser = require('body-parser')
+
+const mongoose = require('mongoose')
 
 const app = express()
 
 const feedsRouter = require('./router/feeds')
 
-//middleware Parse json
-app.use(express.json())
+const MONGO_URL = 'mongodb+srv://rafliandrean_:mancity113@cluster0.g1eir.mongodb.net/message?retryWrites=true'
 
+//middleware Parse json
+app.use(express.json()) //parser json
+
+// static path
+app.use('/images', express.static(path.join(__dirname, 'images')))
+
+// Allow cors
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE')
@@ -17,4 +26,9 @@ app.use((req, res, next) => {
 
 app.use('/feeds', feedsRouter)
 
-app.listen(8080)
+//mongo connect to database
+mongoose.connect(MONGO_URL)
+    .then(result => {
+        app.listen(8080)
+    })
+    .catch(err => console.log(err))
