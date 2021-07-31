@@ -3,20 +3,23 @@ const { validationResult } = require('express-validator/check')
 const Post = require('../model/post')
 
 exports.getPosts = (req, res, next) => {
-    res.status(200).json({
-        posts: [
-            {
-                _id: '1',
-                title: "Hello this is my first post", 
-                content: "This is my first Post",
-                imageUrl: 'images/comp.jpg',
-                creator: {
-                    name: 'Rafli'
-                },
-                createdAt: new Date()
+    Post.find()
+        .then(posts => {
+            if (posts.length < 1){
+                return res.status(201).json({
+                    message: 'Post is empty.'
+                })
             }
-        ]
-    })
+            res.status(200).json({
+                posts: posts
+            })
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500
+            }
+            next(err)
+        })
 }
 
 exports.createPost = (req, res, next) => {
@@ -46,6 +49,29 @@ exports.createPost = (req, res, next) => {
             res.status(201).json({
                 message: "post created successfully",
                 post: result
+            })
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500
+            }
+            next(err)
+        })
+}
+
+exports.getPost = (req, res, next) => {
+    const postId = req.params.postId
+    
+    Post.findById(postId)
+        .then(postData => {
+            if(!postData){
+                const error = new Error('Post not found!')
+                error.statusCode = 404
+                throw error
+            }
+            res.status(200).json({
+                message: 'get post success',
+                post: postData
             })
         })
         .catch(err => {
