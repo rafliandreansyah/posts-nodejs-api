@@ -18,4 +18,10 @@ router.post('/post',[
 // GET /feeds/post/postId
 router.get('/post/:postId', controllers.getPost)
 
+// PUT /feeds/post/postId
+router.put('/post/:postId', [
+    body('title').trim().isLength({ min: 5 }),
+    body('content').trim().isLength({ min: 5 })
+], controllers.updatePost)
+
 module.exports = router

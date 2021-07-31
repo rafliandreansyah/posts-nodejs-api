@@ -2,6 +2,8 @@ const { validationResult } = require('express-validator/check')
 
 const Post = require('../model/post')
 
+const fileHelper = require('../utils/file-helper')
+
 exports.getPosts = (req, res, next) => {
     Post.find()
         .then(posts => {
@@ -23,21 +25,29 @@ exports.getPosts = (req, res, next) => {
 }
 
 exports.createPost = (req, res, next) => {
-    const error = validationResult(req)
+    const title = req.body.title
 
-    if (!error.isEmpty()) {
+    const errors = validationResult(req)
+
+    if (!errors.isEmpty()) {
         const error = new Error('Validation failed, entered data is incorrect')
         error.statusCode = 422
         throw error
     }
 
-    const title = req.body.title
     const content = req.body.content
+    const image = req.file
+
+    if (!req.file){
+        const error = new Error('No image provided')
+        error.statusCode = 422
+        throw error
+    }
 
     const post = new Post({
         title: title,
         content: content,
-        imageUrl: 'images/comp.jpg',
+        imageUrl: image.path,
         creator: {
             name: 'Rafli Andreansyah'
         }
@@ -80,4 +90,61 @@ exports.getPost = (req, res, next) => {
             }
             next(err)
         })
+}
+
+exports.updatePost = (req, res, next) => {
+    const postId = req.params.postId
+
+    const errors = validationResult(req)
+
+    if (!errors.isEmpty()){
+        const error = new Error('Validation failed, entered data is incorrect')
+        error.statusCode = 422
+        throw error
+    }
+
+    const title = req.body.title
+    const content = req.body.content
+    let imageUrl = req.body.image
+
+    console.log(imageUrl)
+
+    if (req.file) {
+        imageUrl = req.file.path
+    }
+    
+    if (!imageUrl) {
+        const error = new Error('No image pick.')
+        error.statusCode = 422
+        throw error
+    }
+
+    Post.findById(postId)
+        .then(post => {
+            if (!post) {
+                const error = new Error('Post not found.')
+                error.statusCode = 404
+                throw error 
+            }
+            if (imageUrl !== post.imageUrl){
+                fileHelper.deleteFile(post.imageUrl)
+            }
+            post.title = title
+            post.content = content
+            post.imageUrl = imageUrl
+            return post.save()
+        })
+        .then(result => {
+            res.status(200).json({
+                message: 'Post Updated.',
+                post: result
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode){
+                err.statusCode = 422
+            }
+            next(err)
+        })
+
 }

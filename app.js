@@ -3,6 +3,7 @@ const path = require('path')
 const express = require('express')
 
 const mongoose = require('mongoose')
+const multer = require('multer')
 
 const app = express()
 
@@ -10,8 +11,29 @@ const feedsRouter = require('./router/feeds')
 
 const MONGO_URL = 'mongodb+srv://rafliandrean_:mancity113@cluster0.g1eir.mongodb.net/message?retryWrites=true'
 
+const fileImageStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'images')
+    },
+    filename: (req, file, cb) => {
+        cb(null, new Date().toISOString() + '-' + file.originalname)
+    }
+})
+
+const fileImageFilter = (req, file, cb) => {
+    if(file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
+        cb(null, true)
+    }
+    else{
+        cb(null, false)
+    }
+}
+
 //middleware Parse json
 app.use(express.json()) //parser json
+
+//middleware for upload images
+app.use(multer({storage: fileImageStorage, fileFilter: fileImageFilter}).single('image'))
 
 // static path
 app.use('/images', express.static(path.join(__dirname, 'images')))
