@@ -8,6 +8,7 @@ const multer = require('multer')
 const app = express()
 
 const feedsRouter = require('./router/feeds')
+const authRouter = require('./router/auth')
 
 const MONGO_URL = 'mongodb+srv://rafliandrean_:mancity113@cluster0.g1eir.mongodb.net/message?retryWrites=true'
 
@@ -48,6 +49,7 @@ app.use((req, res, next) => {
 
 //Route middleware
 app.use('/feeds', feedsRouter)
+app.use('/auth', authRouter)
 
 
 //Global handling error
@@ -55,8 +57,10 @@ app.use((error, req, res, next) => {
     console.log(error)
     const status = error.statusCode || 500
     const message = error.message
+    const data = error.data
     res.status(status).json({
-        message: message
+        message: message,
+        data: data
     })
 })
 
