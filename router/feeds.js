@@ -24,4 +24,7 @@ router.put('/post/:postId', [
     body('content').trim().isLength({ min: 5 })
 ], controllers.updatePost)
 
+// DELETE /feeds/post/postId
+router.delete('/post/:postId', controllers.deletePost)
+
 module.exports = router

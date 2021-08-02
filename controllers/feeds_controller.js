@@ -5,15 +5,21 @@ const Post = require('../model/post')
 const fileHelper = require('../utils/file-helper')
 
 exports.getPosts = (req, res, next) => {
-    Post.find()
+    let page = req.query.page || 1
+    let perPage = 2
+    let totalItems
+
+    Post.find().countDocuments()
+        .then(countDocument => {
+            totalItems = countDocument
+            return Post.find()
+                .skip((page - 1) * perPage)
+                .limit(perPage)
+        })
         .then(posts => {
-            if (posts.length < 1){
-                return res.status(201).json({
-                    message: 'Post is empty.'
-                })
-            }
             res.status(200).json({
-                posts: posts
+                posts: posts,
+                totalItems: totalItems
             })
         })
         .catch(err => {
@@ -22,6 +28,17 @@ exports.getPosts = (req, res, next) => {
             }
             next(err)
         })
+        
+    Post.find()
+        .then(posts => {
+            if (posts.length < 1){
+                return res.status(201).json({
+                    message: 'Post is empty.'
+                })
+            }
+            
+        })
+        
 }
 
 exports.createPost = (req, res, next) => {
@@ -142,9 +159,33 @@ exports.updatePost = (req, res, next) => {
         })
         .catch(err => {
             if (!err.statusCode){
-                err.statusCode = 422
+                err.statusCode = 500
             }
             next(err)
         })
 
+}
+
+exports.deletePost = (req, res, next) => {
+    const postId = req.params.postId
+
+    Post.findById(postId)
+        .then(post => {
+            if (!post){
+                const error = new Error('Post not found')
+                error.statusCode = 422
+                throw error
+            }
+            fileHelper.deleteFile(post.imageUrl)
+            return Post.findByIdAndRemove(postId)
+        })
+        .then(result => {
+            res.status(200).json({message: 'Post deleted.'})
+        })
+        .catch(err => {
+            if (!err.statusCode){
+                err.statusCode = 500
+            }
+            next(err)
+        })
 }
