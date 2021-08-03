@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator/check')
 
 const Post = require('../model/post')
+const User = require('../model/user')
 
 const fileHelper = require('../utils/file-helper')
 
@@ -43,7 +44,6 @@ exports.getPosts = (req, res, next) => {
 
 exports.createPost = (req, res, next) => {
     const title = req.body.title
-
     const errors = validationResult(req)
 
     if (!errors.isEmpty()) {
@@ -61,21 +61,30 @@ exports.createPost = (req, res, next) => {
         throw error
     }
 
+    let creator
     const post = new Post({
         title: title,
         content: content,
         imageUrl: image.path,
-        creator: {
-            name: 'Rafli Andreansyah'
-        }
+        creator: req.userId
     })
     post.save()
         .then(result => {
-            console.log(result)
+            return User.findById(req.userId)
+        })
+        .then(user => {
+            creator = user
+            user.posts.push(post)
+            return user.save()
+        })
+        .then(result => {
             //sending status post
             res.status(201).json({
                 message: "post created successfully",
-                post: result
+                post: post,
+                creator: {
+                    _id: creator._id, name: creator.name
+                }
             })
         })
         .catch(err => {
@@ -146,6 +155,11 @@ exports.updatePost = (req, res, next) => {
             if (imageUrl !== post.imageUrl){
                 fileHelper.deleteFile(post.imageUrl)
             }
+            if (post.creator.toString() !== req.userId){
+                const error = new Error('Not authorized!')
+                error.statusCode = 403
+                throw error
+            }
             post.title = title
             post.content = content
             post.imageUrl = imageUrl
@@ -176,8 +190,20 @@ exports.deletePost = (req, res, next) => {
                 error.statusCode = 422
                 throw error
             }
+            if (post.creator.toString() !== req.userId){
+                const error = new Error('Not authorized!')
+                error.statusCode = 403
+                throw error
+            }
             fileHelper.deleteFile(post.imageUrl)
             return Post.findByIdAndRemove(postId)
+        })
+        .then(result => {
+            return User.findById(req.userId)
+        })
+        .then(user => {
+            user.posts.pull(postId)
+            return user.save()
         })
         .then(result => {
             res.status(200).json({message: 'Post deleted.'})
