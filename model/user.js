@@ -20,7 +20,7 @@ const userSchema = new Schema({
         default: 'i am new user'
     },
     posts: [{
-        type: mongoose.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'Post'
     }]
 })

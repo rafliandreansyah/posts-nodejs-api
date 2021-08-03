@@ -6,25 +6,27 @@ const controllers = require('../controllers/feeds_controller')
 
 const router = express.Router()
 
+const isAuth = require('../middleware/is-auth')
+
 // GET /feeds/posts
-router.get('/posts', controllers.getPosts)
+router.get('/posts', isAuth, controllers.getPosts)
 
 // POST /feeds/post
 router.post('/post',[
     body('title').trim().isLength({ min: 5 }),
     body('content').trim().isLength({ min: 5 })
-] , controllers.createPost)
+], isAuth, controllers.createPost)
 
 // GET /feeds/post/postId
-router.get('/post/:postId', controllers.getPost)
+router.get('/post/:postId', isAuth, controllers.getPost)
 
 // PUT /feeds/post/postId
 router.put('/post/:postId', [
     body('title').trim().isLength({ min: 5 }),
     body('content').trim().isLength({ min: 5 })
-], controllers.updatePost)
+], isAuth, controllers.updatePost)
 
 // DELETE /feeds/post/postId
-router.delete('/post/:postId', controllers.deletePost)
+router.delete('/post/:postId', isAuth, controllers.deletePost)
 
 module.exports = router
