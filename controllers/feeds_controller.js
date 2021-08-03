@@ -187,7 +187,7 @@ exports.deletePost = (req, res, next) => {
         .then(post => {
             if (!post){
                 const error = new Error('Post not found')
-                error.statusCode = 422
+                error.statusCode = 404
                 throw error
             }
             if (post.creator.toString() !== req.userId){
