@@ -3,6 +3,7 @@ const { validationResult } = require('express-validator/check')
 const Post = require('../model/post')
 const User = require('../model/user')
 
+const io = require('../socket')
 const fileHelper = require('../utils/file-helper')
 
 exports.getPosts = async (req, res, next) => {
@@ -10,8 +11,8 @@ exports.getPosts = async (req, res, next) => {
     let perPage = 2
 
     try{
-        const totalItems = await Post.find().countDocuments()
-        const posts = await Post.find().skip((page - 1) * perPage).limit(perPage)
+        const totalItems = await Post.find().populate('creator').sort({createdAt: -1}).countDocuments()
+        const posts = await Post.find().populate('creator').skip((page - 1) * perPage).limit(perPage)
 
         res.status(200).json({
             posts: posts,
@@ -57,6 +58,10 @@ exports.createPost = async (req, res, next) => {
         const user =  await User.findById(req.userId)
         user.posts.push(post)
         await user.save()
+        
+        //emit client socketio create post
+        io.getIo().emit('posts', { action: 'create', post: {...post._doc, creator: { _id: req.userId, name: user.name }} })
+
         //sending status post
         res.status(201).json({
             message: "post created successfully",
@@ -122,7 +127,7 @@ exports.updatePost = async (req, res, next) => {
     }
 
     try {
-        const post = await Post.findById(postId)
+        const post = await Post.findById(postId).populate('creator')
         if (!post) {
             const error = new Error('Post not found.')
             error.statusCode = 404
@@ -131,7 +136,7 @@ exports.updatePost = async (req, res, next) => {
         if (imageUrl !== post.imageUrl){
             fileHelper.deleteFile(post.imageUrl)
         }
-        if (post.creator.toString() !== req.userId){
+        if (post.creator._id.toString() !== req.userId){
             const error = new Error('Not authorized!')
             error.statusCode = 403
             throw error
@@ -140,6 +145,10 @@ exports.updatePost = async (req, res, next) => {
         post.content = content
         post.imageUrl = imageUrl
         const result = await post.save()
+
+        //emit client socketio update post
+        io.getIo().emit('posts', { action: 'update', post: result })
+
         res.status(200).json({
             message: 'Post Updated.',
             post: result
@@ -176,6 +185,7 @@ exports.deletePost = async (req, res, next) => {
         const user = await User.findById(req.userId)
         user.posts.pull(postId)
         await user.save()
+        io.getIo().emit('posts', { action: 'delete', post: postId })
 
         res.status(200).json({message: 'Post deleted.'})
     }catch(err) {
