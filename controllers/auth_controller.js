@@ -58,8 +58,10 @@ exports.postLogin = async (req, res, next) => {
             userId: user._id.toString()
         }, 'supersecretkey', { expiresIn: '1h' })
         res.status(200).json({
-            token: token,
-            userId: user._id.toString()
+            user: {
+                token: token,
+                userId: user._id.toString()
+            }
         })
         return
     }catch(err){
