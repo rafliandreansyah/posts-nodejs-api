@@ -32,6 +32,7 @@ const fileImageFilter = (req, file, cb) => {
 
 //middleware Parse json
 app.use(express.json()) //parser json
+app.use(express.urlencoded({extended: true}))
 
 //middleware for upload images
 app.use(multer({storage: fileImageStorage, fileFilter: fileImageFilter}).single('image'))
